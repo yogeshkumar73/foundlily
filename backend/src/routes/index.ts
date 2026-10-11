@@ -5,9 +5,14 @@ import { socialRouter, socialController } from '../modules/social';
 import { adminRouter } from '../modules/admin';
 import { metadataRouter } from '../modules/metadata';
 import { analyticsRouter, analyticsController } from '../modules/analytics';
+import { uploadRouter, serveImageHandler } from '../modules/upload';
 import { authMiddleware } from '../middleware/auth';
 
 export const apiRouter = Router();
+
+// Module: Dynamic Image Upload & Serving
+apiRouter.use('/upload', uploadRouter);
+apiRouter.get('/images/:filename', serveImageHandler);
 
 // Module: Auth
 apiRouter.use('/auth', authRouter);

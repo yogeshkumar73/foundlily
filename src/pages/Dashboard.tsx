@@ -121,8 +121,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, initialParam }
     }
   };
 
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
+  // Automatically generate a valid URL format image based on startup name & chosen style
+  const handleAutoGenerateLogo = (style: 'identicon' | 'shapes' | 'monogram' = 'identicon') => {
+    const brandName = (formName || 'Startup').trim();
+    const seed = encodeURIComponent(brandName.toLowerCase());
+    let generatedUrl = '';
+    if (style === 'shapes') {
+      generatedUrl = `https://api.dicebear.com/7.x/shapes/svg?seed=${seed}&backgroundColor=0f172a,1e1b4b,312e81`;
+    } else if (style === 'monogram') {
+      generatedUrl = `https://ui-avatars.com/api/?name=${seed}&background=6366f1&color=fff&size=256&bold=true`;
+    } else {
+      generatedUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${seed}&backgroundColor=0f172a,1e1b4b,312e81`;
+    }
+    setFormLogo(generatedUrl);
+    setErrorMsg('');
+  };
+
   // Dynamic Image / Logo Upload handler
-  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -138,9 +156,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, initialParam }
 
     setErrorMsg('');
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       if (typeof reader.result === 'string') {
-        setFormLogo(reader.result);
+        const base64Data = reader.result;
+        // Instant visual preview
+        setFormLogo(base64Data);
+
+        // Upload to server to automatically get a valid URL format
+        try {
+          setUploadingLogo(true);
+          const res = await api.uploadImage(base64Data, file.name);
+          if (res && res.url) {
+            setFormLogo(res.url);
+          }
+        } catch (uploadErr) {
+          console.warn('Backend image upload fallback:', uploadErr);
+        } finally {
+          setUploadingLogo(false);
+        }
       }
     };
     reader.readAsDataURL(file);
@@ -215,12 +248,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, initialParam }
       setErrorMsg('');
       setSuccessMsg('');
 
+      let cleanWebsite = formWebsite.trim();
+      if (cleanWebsite && !cleanWebsite.startsWith('http://') && !cleanWebsite.startsWith('https://')) {
+        cleanWebsite = `https://${cleanWebsite}`;
+      }
+
+      let cleanLogo = formLogo.trim();
+      if (!cleanLogo) {
+        const seed = encodeURIComponent((formName || 'Startup').trim().toLowerCase());
+        cleanLogo = `https://api.dicebear.com/7.x/identicon/svg?seed=${seed}&backgroundColor=0f172a,1e1b4b,312e81`;
+      }
+
       const payload = {
         name: formName.trim(),
         shortDescription: formShortDesc.trim(),
         description: formDesc.trim() || formShortDesc.trim(),
-        website: formWebsite.trim() || 'https://example.com',
-        logo: formLogo.trim() || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200',
+        website: cleanWebsite || 'https://example.com',
+        logo: cleanLogo,
         categoryId: formCategory,
         subCategoryId: formSubCategory,
         countryId: formCountry,
@@ -509,8 +553,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, initialParam }
                       <ImageIcon className="w-8 h-8 text-slate-600" />
                     )}
                   </div>
-                  <div className="flex-1 space-y-2 w-full">
-                    <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex-1 space-y-3 w-full">
+                    <div className="flex flex-wrap items-center gap-2">
                       <input
                         type="file"
                         ref={fileInputRef}
@@ -520,11 +564,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, initialParam }
                       />
                       <button
                         type="button"
+                        disabled={uploadingLogo}
                         onClick={() => fileInputRef.current?.click()}
-                        className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-md shadow-indigo-600/20"
+                        className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20"
                       >
-                        <Upload className="w-3.5 h-3.5" /> Upload File (PNG/JPG/SVG)
+                        {uploadingLogo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                        {uploadingLogo ? 'Uploading & Generating URL...' : 'Upload File (PNG/JPG/SVG)'}
                       </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleAutoGenerateLogo('identicon')}
+                        className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-purple-600/20"
+                        title="Automatically generate a unique branded SVG logo URL"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" /> Auto-Generate Logo URL
+                      </button>
+
                       {formLogo && (
                         <button
                           type="button"
@@ -535,14 +591,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, initialParam }
                         </button>
                       )}
                     </div>
-                    <div className="relative">
+
+                    <div className="space-y-1.5">
                       <input
-                        type="url"
-                        placeholder="Or paste external image URL (e.g. https://...)"
-                        value={formLogo.startsWith('data:') ? 'Custom uploaded image asset' : formLogo}
+                        type="text"
+                        placeholder="Image URL (e.g. https://... or click Auto-Generate Logo URL)"
+                        value={formLogo}
                         onChange={(e) => setFormLogo(e.target.value)}
                         className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
+                      <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                        <span className="text-slate-500 font-medium">Quick logo styles:</span>
+                        <button
+                          type="button"
+                          onClick={() => handleAutoGenerateLogo('identicon')}
+                          className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 text-[10px] font-semibold transition"
+                        >
+                          Tech Identicon
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAutoGenerateLogo('shapes')}
+                          className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-purple-300 text-[10px] font-semibold transition"
+                        >
+                          Modern Shapes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAutoGenerateLogo('monogram')}
+                          className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 text-[10px] font-semibold transition"
+                        >
+                          Letter Monogram
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -798,7 +879,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, initialParam }
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Official Website URL</label>
                   <input
-                    type="url"
+                    type="text"
                     placeholder="https://mycompany.com"
                     value={formWebsite}
                     onChange={(e) => setFormWebsite(e.target.value)}

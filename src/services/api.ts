@@ -77,4 +77,11 @@ export const api = {
   featureProfile: (id: string) => request(`/api/admin/profiles/${id}/feature`, { method: 'PATCH' }),
 
   getAiPitchReview: (profileData: any) => request('/api/ai/pitch-review', { method: 'POST', body: JSON.stringify({ profileData }) }),
+  uploadImage: (image: string, name?: string) => request('/api/upload', { method: 'POST', body: JSON.stringify({ image, name }) }),
+
+  forgotPasswordVerify: (email: string) =>
+    request('/api/auth/forgot-password/verify', { method: 'POST', body: JSON.stringify({ email }) }),
+  forgotPasswordReset: (email: string, newPassword: string, confirmPassword: string) =>
+    request('/api/auth/forgot-password/reset', { method: 'POST', body: JSON.stringify({ email, newPassword, confirmPassword }) }),
 };
+

@@ -190,3 +190,22 @@ const AnalyticsEventSchema = new Schema<IAnalyticsEvent>({
 }, { timestamps: { createdAt: true, updatedAt: false } });
 
 export const AnalyticsEventModel: mongoose.Model<IAnalyticsEvent> = (mongoose.models.AnalyticsEvent as mongoose.Model<IAnalyticsEvent>) || mongoose.model<IAnalyticsEvent>('AnalyticsEvent', AnalyticsEventSchema);
+
+// Uploaded Image Schema (for persistent avatar/logo hosting)
+export interface IImage extends Document {
+  imageId: string;
+  filename: string;
+  contentType: string;
+  dataBase64: string;
+  createdAt: Date;
+}
+
+const ImageSchema = new Schema<IImage>({
+  imageId: { type: String, required: true, unique: true, index: true },
+  filename: { type: String, required: true },
+  contentType: { type: String, required: true },
+  dataBase64: { type: String, required: true },
+}, { timestamps: { createdAt: true, updatedAt: false } });
+
+export const ImageModel: mongoose.Model<IImage> = (mongoose.models.Image as mongoose.Model<IImage>) || mongoose.model<IImage>('Image', ImageSchema);
+

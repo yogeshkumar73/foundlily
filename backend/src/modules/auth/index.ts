@@ -7,6 +7,7 @@ import { hashPassword, comparePassword } from '../../utils';
 import { signToken } from '../../lib/auth';
 import { authMiddleware, AuthenticatedRequest } from '../../middleware/auth';
 import { initialUsers } from '../../services/seedData';
+import { verifyEmailSchema, resetPasswordSchema } from '../../validators';
 
 // Validation Schemas (Single Responsibility)
 export const registerSchema = z.object({
@@ -172,7 +173,68 @@ export const authService = {
 
   getAllUsersCount(): number {
     return usersStore.length;
-  }
+  },
+
+  async verifyEmail(email: string): Promise<boolean> {
+    const lowerEmail = email.toLowerCase();
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@example.com').toLowerCase();
+
+    // Admin account always exists
+    if (lowerEmail === adminEmail) return true;
+
+    // Check in-memory store
+    const inMemory = usersStore.find(u => u.email.toLowerCase() === lowerEmail);
+    if (inMemory) return true;
+
+    // Fall back to MongoDB
+    if (isDbConnected()) {
+      try {
+        const dbUser = await UserModel.findOne({ email: lowerEmail }).lean();
+        if (dbUser) return true;
+      } catch (err) {
+        console.warn('[AuthService] DB verifyEmail lookup notice:', err);
+      }
+    }
+
+    return false;
+  },
+
+  async resetPassword(email: string, newPassword: string): Promise<void> {
+    const lowerEmail = email.toLowerCase();
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@example.com').toLowerCase();
+
+    if (lowerEmail === adminEmail) {
+      throw new Error('Admin password can only be changed via environment variables.');
+    }
+
+    const newHash = hashPassword(newPassword);
+
+    // Update in-memory store — only change passwordHash
+    const idx = usersStore.findIndex(u => u.email.toLowerCase() === lowerEmail);
+    if (idx !== -1) {
+      usersStore[idx] = { ...usersStore[idx], passwordHash: newHash };
+    }
+
+    // Update MongoDB — only the passwordHash field, nothing else
+    if (isDbConnected()) {
+      try {
+        await UserModel.findOneAndUpdate(
+          { email: lowerEmail },
+          { $set: { passwordHash: newHash } },
+          { new: true }
+        );
+      } catch (err) {
+        console.warn('[AuthService] DB resetPassword update notice:', err);
+      }
+    }
+
+    if (idx === -1) {
+      // User wasn't in memory; check if they are in DB
+      if (!isDbConnected()) {
+        throw new Error('User not found. Please register first.');
+      }
+    }
+  },
 };
 
 export const authController = {
@@ -246,7 +308,36 @@ export const authController = {
       return res.status(401).json({ error: 'User does not exist' });
     }
     return res.json({ user });
-  }
+  },
+
+  async verifyEmail(req: Request, res: Response) {
+    try {
+      const parsed = verifyEmailSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.issues[0]?.message || 'Invalid email' });
+      }
+      const exists = await authService.verifyEmail(parsed.data.email);
+      if (!exists) {
+        return res.status(404).json({ error: 'No account found with this email address.' });
+      }
+      return res.json({ valid: true, message: 'Email verified. You may set a new password.' });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || 'Verification failed' });
+    }
+  },
+
+  async resetPassword(req: Request, res: Response) {
+    try {
+      const parsed = resetPasswordSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.issues[0]?.message || 'Validation failed' });
+      }
+      await authService.resetPassword(parsed.data.email, parsed.data.newPassword);
+      return res.json({ success: true, message: 'Password updated successfully. Please sign in with your new password.' });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message || 'Password reset failed' });
+    }
+  },
 };
 
 export const authRouter = Router();
@@ -254,3 +345,5 @@ authRouter.post('/register', authController.register);
 authRouter.post('/login', authController.login);
 authRouter.post('/logout', authController.logout);
 authRouter.get('/session', authMiddleware, authController.session);
+authRouter.post('/forgot-password/verify', authController.verifyEmail);
+authRouter.post('/forgot-password/reset', authController.resetPassword);

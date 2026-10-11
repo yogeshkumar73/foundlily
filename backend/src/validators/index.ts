@@ -42,3 +42,16 @@ export const profileUpdateSchema = profileCreateSchema.partial().extend({
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'DRAFT']).optional(),
   isFeatured: z.boolean().optional(),
 });
+
+export const verifyEmailSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+  confirmPassword: z.string().min(6, 'Confirm password must be at least 6 characters'),
+}).refine(data => data.newPassword === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+});
