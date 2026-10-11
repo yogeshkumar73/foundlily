@@ -94,7 +94,7 @@ export default function App() {
         {currentView === 'home' && <Home onNavigate={handleNavigate} />}
         {currentView === 'explore' && <Explore initialQuery={currentParam.startsWith('q=') ? decodeURIComponent(currentParam.substring(2)) : ''} onNavigate={handleNavigate} />}
         {currentView === 'profile' && <ProfileDetail slug={currentParam} user={user} onNavigate={handleNavigate} />}
-        {currentView === 'dashboard' && <Dashboard onNavigate={handleNavigate} />}
+        {currentView === 'dashboard' && <Dashboard onNavigate={handleNavigate} initialParam={currentParam} />}
         {currentView === 'admin' && <Admin onNavigate={handleNavigate} />}
 
         {currentView === 'trending' && (

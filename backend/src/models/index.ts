@@ -19,7 +19,7 @@ const UserSchema = new Schema<IUser>({
   role: { type: String, enum: ['admin', 'user'], default: 'user' },
 }, { timestamps: true });
 
-export const UserModel = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+export const UserModel: mongoose.Model<IUser> = (mongoose.models.User as mongoose.Model<IUser>) || mongoose.model<IUser>('User', UserSchema);
 
 // Profile Schema
 export interface IProfile extends Document {
@@ -98,7 +98,7 @@ const ProfileSchema = new Schema<IProfile>({
 ProfileSchema.index({ createdAt: -1 });
 ProfileSchema.index({ categoryId: 1, countryId: 1, stage: 1 });
 
-export const ProfileModel = mongoose.models.Profile || mongoose.model<IProfile>('Profile', ProfileSchema);
+export const ProfileModel: mongoose.Model<IProfile> = (mongoose.models.Profile as mongoose.Model<IProfile>) || mongoose.model<IProfile>('Profile', ProfileSchema);
 
 // Category Schema
 export interface ICategory extends Document {
@@ -117,7 +117,7 @@ const CategorySchema = new Schema<ICategory>({
   isActive: { type: Boolean, default: true },
 });
 
-export const CategoryModel = mongoose.models.Category || mongoose.model<ICategory>('Category', CategorySchema);
+export const CategoryModel: mongoose.Model<ICategory> = (mongoose.models.Category as mongoose.Model<ICategory>) || mongoose.model<ICategory>('Category', CategorySchema);
 
 // Region Schema
 export interface IRegion extends Document {
@@ -141,7 +141,7 @@ const RegionSchema = new Schema<IRegion>({
   }],
 });
 
-export const RegionModel = mongoose.models.Region || mongoose.model<IRegion>('Region', RegionSchema);
+export const RegionModel: mongoose.Model<IRegion> = (mongoose.models.Region as mongoose.Model<IRegion>) || mongoose.model<IRegion>('Region', RegionSchema);
 
 // Follow Schema (with compound index)
 export interface IFollow extends Document {
@@ -153,10 +153,10 @@ export interface IFollow extends Document {
 const FollowSchema = new Schema<IFollow>({
   userId: { type: String, required: true, index: true },
   profileId: { type: String, required: true, index: true },
-}, { timestamps: { createdAt: true, updatedAt: false } });
+  }, { timestamps: { createdAt: true, updatedAt: false } });
 
 FollowSchema.index({ userId: 1, profileId: 1 }, { unique: true });
-export const FollowModel = mongoose.models.Follow || mongoose.model<IFollow>('Follow', FollowSchema);
+export const FollowModel: mongoose.Model<IFollow> = (mongoose.models.Follow as mongoose.Model<IFollow>) || mongoose.model<IFollow>('Follow', FollowSchema);
 
 // SavedProfile Schema (with compound index)
 export interface ISavedProfile extends Document {
@@ -171,7 +171,7 @@ const SavedProfileSchema = new Schema<ISavedProfile>({
 }, { timestamps: { createdAt: true, updatedAt: false } });
 
 SavedProfileSchema.index({ userId: 1, profileId: 1 }, { unique: true });
-export const SavedProfileModel = mongoose.models.SavedProfile || mongoose.model<ISavedProfile>('SavedProfile', SavedProfileSchema);
+export const SavedProfileModel: mongoose.Model<ISavedProfile> = (mongoose.models.SavedProfile as mongoose.Model<ISavedProfile>) || mongoose.model<ISavedProfile>('SavedProfile', SavedProfileSchema);
 
 // Analytics Event Schema
 export interface IAnalyticsEvent extends Document {
@@ -189,4 +189,4 @@ const AnalyticsEventSchema = new Schema<IAnalyticsEvent>({
   metadata: { type: Schema.Types.Mixed },
 }, { timestamps: { createdAt: true, updatedAt: false } });
 
-export const AnalyticsEventModel = mongoose.models.AnalyticsEvent || mongoose.model<IAnalyticsEvent>('AnalyticsEvent', AnalyticsEventSchema);
+export const AnalyticsEventModel: mongoose.Model<IAnalyticsEvent> = (mongoose.models.AnalyticsEvent as mongoose.Model<IAnalyticsEvent>) || mongoose.model<IAnalyticsEvent>('AnalyticsEvent', AnalyticsEventSchema);

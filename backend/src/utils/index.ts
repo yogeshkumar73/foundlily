@@ -1,8 +1,9 @@
 import crypto from 'crypto';
 
+const PASSWORD_SALT = process.env.PASSWORD_SALT || 'foundlily_secure_salt_2026';
+
 export function hashPassword(password: string): string {
-  const salt = process.env.PASSWORD_SALT || 'foundlily_secure_salt_2026';
-  return crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return crypto.pbkdf2Sync(password, PASSWORD_SALT, 1000, 64, 'sha512').toString('hex');
 }
 
 export function comparePassword(password: string, hash: string): boolean {

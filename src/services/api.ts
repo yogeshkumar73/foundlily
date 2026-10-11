@@ -1,4 +1,5 @@
 const TOKEN_KEY = 'foundlily_auth_token';
+const API_BASE_URL = ((import.meta as any).env?.VITE_API_URL || '').replace(/\/$/, '');
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -22,7 +23,9 @@ async function request(endpoint: string, options: RequestInit = {}) {
     (headers as any)['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(endpoint, {
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+
+  const res = await fetch(url, {
     credentials: 'include',
     ...options,
     headers,

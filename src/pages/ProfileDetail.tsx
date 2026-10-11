@@ -3,7 +3,8 @@ import { Profile, User } from '../types';
 import { api } from '../services/api';
 import { 
   ShieldCheck, Globe, Users, Bookmark, Share2, ExternalLink, 
-  Sparkles, DollarSign, Cpu, Building2, Calendar, Award, CheckCircle, Loader2, ArrowLeft 
+  Sparkles, DollarSign, Cpu, Building2, Calendar, Award, CheckCircle, Loader2, ArrowLeft,
+  Edit, MapPin
 } from 'lucide-react';
 
 interface ProfileDetailProps {
@@ -150,6 +151,15 @@ export const ProfileDetail: React.FC<ProfileDetailProps> = ({ slug, user, onNavi
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3 w-full md:w-auto">
+            {user && (user._id === profile.ownerId || user.role === 'admin') && (
+              <button
+                onClick={() => onNavigate('dashboard', profile._id)}
+                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-indigo-600 border border-slate-700 hover:border-indigo-500 text-slate-200 hover:text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-md"
+                title="Edit Company Profile"
+              >
+                <Edit className="w-4 h-4 text-amber-400" /> Edit Profile
+              </button>
+            )}
             <button
               onClick={handleFollow}
               className={`flex-1 md:flex-initial px-5 py-2.5 rounded-xl font-semibold text-sm transition ${following ? 'bg-slate-800 text-indigo-400 border border-indigo-500/50' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-700'}`}
@@ -263,8 +273,70 @@ export const ProfileDetail: React.FC<ProfileDetailProps> = ({ slug, user, onNavi
                 <span className="text-sm text-slate-400 flex items-center gap-2"><Users className="w-4 h-4 text-amber-400" /> Founder</span>
                 <span className="text-sm font-bold text-white">{profile.founder}</span>
               </div>
+
+              {profile.cityId && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400 flex items-center gap-2"><MapPin className="w-4 h-4 text-rose-400" /> Location</span>
+                  <span className="text-sm font-bold text-white">{profile.cityId}</span>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Social Links Card */}
+          {profile.socialLinks && Object.values(profile.socialLinks).some(v => Boolean(v)) && (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4">
+              <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-400 pb-3 border-b border-slate-800">
+                Community & Socials
+              </h4>
+              <div className="flex flex-col gap-2.5">
+                {profile.socialLinks.linkedin && (
+                  <a
+                    href={profile.socialLinks.linkedin.startsWith('http') ? profile.socialLinks.linkedin : `https://${profile.socialLinks.linkedin}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-xs font-semibold text-slate-200 hover:text-indigo-400 transition"
+                  >
+                    <span>LinkedIn</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                  </a>
+                )}
+                {profile.socialLinks.twitter && (
+                  <a
+                    href={profile.socialLinks.twitter.startsWith('http') ? profile.socialLinks.twitter : `https://${profile.socialLinks.twitter}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-xs font-semibold text-slate-200 hover:text-indigo-400 transition"
+                  >
+                    <span>Twitter / X</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                  </a>
+                )}
+                {profile.socialLinks.github && (
+                  <a
+                    href={profile.socialLinks.github.startsWith('http') ? profile.socialLinks.github : `https://${profile.socialLinks.github}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-xs font-semibold text-slate-200 hover:text-indigo-400 transition"
+                  >
+                    <span>GitHub</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                  </a>
+                )}
+                {profile.socialLinks.discord && (
+                  <a
+                    href={profile.socialLinks.discord.startsWith('http') ? profile.socialLinks.discord : `https://${profile.socialLinks.discord}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-xs font-semibold text-slate-200 hover:text-indigo-400 transition"
+                  >
+                    <span>Discord</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

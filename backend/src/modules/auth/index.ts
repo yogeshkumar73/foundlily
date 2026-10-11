@@ -75,7 +75,56 @@ export const authService = {
   },
 
   async login(email: string, pass: string): Promise<UserDTO> {
-    const user = usersStore.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@foundlily.com').toLowerCase();
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    // Check if authenticating as admin using configured environment variable
+    if (adminPassword && email.toLowerCase() === adminEmail && pass === adminPassword) {
+      let admin = usersStore.find(u => u.email.toLowerCase() === adminEmail);
+      if (!admin) {
+        admin = {
+          _id: 'u-admin',
+          name: 'Admin Founder',
+          email: adminEmail,
+          passwordHash: hashPassword(adminPassword),
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          role: 'admin' as const,
+          createdAt: new Date().toISOString(),
+        };
+        usersStore.push(admin);
+      }
+      return {
+        _id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+        avatar: admin.avatar,
+        createdAt: admin.createdAt,
+      };
+    }
+
+    let user = usersStore.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+    if (!user && isDbConnected()) {
+      try {
+        const dbUser = await UserModel.findOne({ email: email.toLowerCase() });
+        if (dbUser) {
+          user = {
+            _id: dbUser._id.toString(),
+            name: dbUser.name,
+            email: dbUser.email,
+            passwordHash: dbUser.passwordHash,
+            avatar: dbUser.avatar,
+            role: dbUser.role as any,
+            createdAt: dbUser.createdAt?.toISOString() || new Date().toISOString(),
+          };
+          usersStore.push(user);
+        }
+      } catch (err) {
+        console.warn('[AuthService] DB user lookup fallback notice:', err);
+      }
+    }
+
     if (!user || !comparePassword(pass, user.passwordHash)) {
       throw new Error('Invalid email or password');
     }
@@ -91,7 +140,25 @@ export const authService = {
   },
 
   async getUserById(id: string): Promise<UserDTO | null> {
-    const user = usersStore.find(u => u._id === id);
+    let user = usersStore.find(u => u._id === id);
+    if (!user && isDbConnected()) {
+      try {
+        const dbUser = await UserModel.findById(id);
+        if (dbUser) {
+          user = {
+            _id: dbUser._id.toString(),
+            name: dbUser.name,
+            email: dbUser.email,
+            passwordHash: dbUser.passwordHash,
+            avatar: dbUser.avatar,
+            role: dbUser.role as any,
+            createdAt: dbUser.createdAt?.toISOString() || new Date().toISOString(),
+          };
+        }
+      } catch (err) {
+        console.warn('[AuthService] DB getUserById lookup notice:', err);
+      }
+    }
     if (!user) return null;
     return {
       _id: user._id,

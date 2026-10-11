@@ -18,5 +18,5 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src", "backend", "server.ts"]
+  "include": ["src", "backend", "server.ts", "netlify"]
 }

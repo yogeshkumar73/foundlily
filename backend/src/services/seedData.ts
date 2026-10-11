@@ -1,11 +1,18 @@
+import dotenv from 'dotenv';
 import { hashPassword } from '../utils';
+
+dotenv.config();
+
+const adminEmail = process.env.ADMIN_EMAIL || 'admin@foundlily.com';
+const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+const userPassword = process.env.USER_PASSWORD || 'user123';
 
 export const initialUsers = [
   {
     _id: 'u-admin',
     name: 'Admin Founder',
-    email: 'admin@foundlily.com',
-    passwordHash: hashPassword('admin123'),
+    email: adminEmail,
+    passwordHash: hashPassword(adminPassword),
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
     role: 'admin' as const,
     createdAt: new Date().toISOString(),
@@ -14,7 +21,7 @@ export const initialUsers = [
     _id: 'u-user1',
     name: 'Sarah Chen',
     email: 'user@foundlily.com',
-    passwordHash: hashPassword('user123'),
+    passwordHash: hashPassword(userPassword),
     avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150',
     role: 'user' as const,
     createdAt: new Date().toISOString(),

@@ -45,12 +45,12 @@ export const Auth: React.FC<AuthProps> = ({ initialMode = 'login', onSuccess, on
 
   const fillDemoUser = () => {
     setEmail('user@foundlily.com');
-    setPassword('user123');
+    setPassword('');
   };
 
   const fillDemoAdmin = () => {
     setEmail('admin@foundlily.com');
-    setPassword('admin123');
+    setPassword('');
   };
 
   return (
@@ -147,16 +147,19 @@ export const Auth: React.FC<AuthProps> = ({ initialMode = 'login', onSuccess, on
               onClick={fillDemoUser}
               className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-medium text-slate-300 transition"
             >
-              Fill User Demo
+              Fill User Email
             </button>
             <button
               type="button"
               onClick={fillDemoAdmin}
               className="flex-1 py-2 bg-purple-950/60 hover:bg-purple-900/60 border border-purple-500/30 rounded-xl text-xs font-medium text-purple-300 transition"
             >
-              Fill Admin Demo
+              Fill Admin Email
             </button>
           </div>
+          <p className="text-[10px] text-slate-500 text-center">
+            Admin password is authenticated via the <code className="text-slate-400">ADMIN_PASSWORD</code> environment variable.
+          </p>
         </div>
 
         <div className="text-center pt-2">

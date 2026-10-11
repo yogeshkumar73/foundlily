@@ -55,7 +55,54 @@ export const authService = {
   },
 
   async login(email: string, pass: string) {
-    const user = memoryUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@foundlily.com').toLowerCase();
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (adminPassword && email.toLowerCase() === adminEmail && pass === adminPassword) {
+      let admin = memoryUsers.find(u => u.email.toLowerCase() === adminEmail);
+      if (!admin) {
+        admin = {
+          _id: 'u-admin',
+          name: 'Admin Founder',
+          email: adminEmail,
+          passwordHash: hashPassword(adminPassword),
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          role: 'admin' as const,
+          createdAt: new Date().toISOString(),
+        };
+        memoryUsers.push(admin);
+      }
+      return {
+        userId: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+        avatar: admin.avatar,
+      };
+    }
+
+    let user = memoryUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+    if (!user && isDbConnected()) {
+      try {
+        const dbUser = await UserModel.findOne({ email: email.toLowerCase() });
+        if (dbUser) {
+          user = {
+            _id: dbUser._id.toString(),
+            name: dbUser.name,
+            email: dbUser.email,
+            passwordHash: dbUser.passwordHash,
+            avatar: dbUser.avatar,
+            role: dbUser.role as any,
+            createdAt: dbUser.createdAt?.toISOString() || new Date().toISOString(),
+          };
+          memoryUsers.push(user);
+        }
+      } catch (err) {
+        console.warn('DB User lookup fallback notice:', err);
+      }
+    }
+
     if (!user || !comparePassword(pass, user.passwordHash)) {
       throw new Error('Invalid email or password');
     }
@@ -70,7 +117,25 @@ export const authService = {
   },
 
   async getUserById(id: string) {
-    const user = memoryUsers.find(u => u._id === id);
+    let user = memoryUsers.find(u => u._id === id);
+    if (!user && isDbConnected()) {
+      try {
+        const dbUser = await UserModel.findById(id);
+        if (dbUser) {
+          user = {
+            _id: dbUser._id.toString(),
+            name: dbUser.name,
+            email: dbUser.email,
+            passwordHash: dbUser.passwordHash,
+            avatar: dbUser.avatar,
+            role: dbUser.role as any,
+            createdAt: dbUser.createdAt?.toISOString() || new Date().toISOString(),
+          };
+        }
+      } catch (err) {
+        console.warn('DB getUserById notice:', err);
+      }
+    }
     if (!user) return null;
     return {
       userId: user._id,
@@ -222,16 +287,46 @@ export const profileService = {
       throw new Error('Unauthorized');
     }
 
-    Object.assign(profile, data, { updatedAt: new Date().toISOString() });
-    if (role !== 'admin' && data.name) {
-      profile.status = 'PENDING';
+    const allowedFields = [
+      'name', 'shortDescription', 'description', 'categoryId', 'subCategoryId',
+      'countryId', 'stateId', 'cityId', 'foundedYear', 'stage', 'businessModel',
+      'teamSize', 'productService', 'website', 'founder', 'socialLinks',
+      'funding', 'ipInfo', 'logo'
+    ];
+
+    const safeUpdate: any = {};
+    for (const key of allowedFields) {
+      if (data[key] !== undefined) {
+        if (key === 'foundedYear' && data[key] !== '') {
+          safeUpdate[key] = Number(data[key]) || profile.foundedYear;
+        } else {
+          safeUpdate[key] = data[key];
+        }
+      }
     }
+
+    if (role === 'admin') {
+      if (data.status !== undefined) safeUpdate.status = data.status;
+      if (data.isFeatured !== undefined) safeUpdate.isFeatured = data.isFeatured;
+    } else {
+      if (data.name !== undefined || data.shortDescription !== undefined || data.description !== undefined || data.ipInfo !== undefined) {
+        safeUpdate.status = 'PENDING';
+      }
+    }
+
+    Object.assign(profile, safeUpdate, { updatedAt: new Date().toISOString() });
 
     profile.trendingScore = calculateTrendingScore({
       viewCount: profile.viewCount,
       followerCount: profile.followerCount,
       saveCount: profile.saveCount,
     });
+
+    if (isDbConnected()) {
+      (ProfileModel as any).findOneAndUpdate({ slug: profile.slug }, safeUpdate).catch((err: any) => {
+        console.warn('DB Profile update sync notice:', err);
+      });
+    }
 
     return profile;
   },

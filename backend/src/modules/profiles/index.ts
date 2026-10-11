@@ -5,6 +5,8 @@ import { authMiddleware, AuthenticatedRequest } from '../../middleware/auth';
 import { generateSlug } from '../../utils';
 import { calculateTrendingScore } from '../../services/rankingService';
 import { initialProfiles, ProfileRecord } from '../../services/seedData';
+import { isDbConnected } from '../../lib/db';
+import { ProfileModel } from '../../models';
 
 // Validation Schema
 export const profileCreateSchema = z.object({
@@ -165,6 +167,16 @@ export const profilesService = {
     };
 
     profilesStore.push(newProfile);
+
+    if (isDbConnected()) {
+      ProfileModel.create({
+        ...newProfile,
+        _id: undefined,
+      }).catch(err => {
+        console.warn('[ProfilesService] DB profile save sync notice:', err);
+      });
+    }
+
     return newProfile;
   },
 
@@ -173,15 +185,49 @@ export const profilesService = {
     if (!profile) return null;
 
     if (profile.ownerId !== userId && role !== 'admin') {
-      throw new Error('Unauthorized');
+      throw new Error('Unauthorized: You can only edit your own startup profiles.');
     }
 
-    Object.assign(profile, data, { updatedAt: new Date().toISOString() });
-    if (role !== 'admin' && data.name) {
-      profile.status = 'PENDING';
+    // Security whitelist: Allow only permitted fields to be updated
+    // Never allow non-admins to alter protected fields (status, isFeatured, viewCount, followerCount, saveCount, trendingScore, ownerId, _id)
+    const allowedFields = [
+      'name', 'shortDescription', 'description', 'categoryId', 'subCategoryId',
+      'countryId', 'stateId', 'cityId', 'foundedYear', 'stage', 'businessModel',
+      'teamSize', 'productService', 'website', 'founder', 'socialLinks',
+      'funding', 'ipInfo', 'logo'
+    ];
+
+    const safeUpdate: any = {};
+    for (const key of allowedFields) {
+      if (data[key] !== undefined) {
+        if (key === 'foundedYear' && data[key] !== '') {
+          safeUpdate[key] = Number(data[key]) || profile.foundedYear;
+        } else {
+          safeUpdate[key] = data[key];
+        }
+      }
     }
 
+    // Handle role-specific logic securely
+    if (role === 'admin') {
+      if (data.status !== undefined) safeUpdate.status = data.status;
+      if (data.isFeatured !== undefined) safeUpdate.isFeatured = data.isFeatured;
+    } else {
+      // If a regular user updates core company information, safely flag it for review
+      if (data.name !== undefined || data.shortDescription !== undefined || data.description !== undefined || data.ipInfo !== undefined) {
+        safeUpdate.status = 'PENDING';
+      }
+    }
+
+    Object.assign(profile, safeUpdate, { updatedAt: new Date().toISOString() });
     profile.trendingScore = calculateTrendingScore(profile);
+
+    if (isDbConnected()) {
+      (ProfileModel as any).findOneAndUpdate({ slug: profile.slug }, safeUpdate).catch((err: any) => {
+        console.warn('[ProfilesService] DB profile update sync notice:', err);
+      });
+    }
+
     return profile;
   },
 
@@ -194,7 +240,14 @@ export const profilesService = {
       throw new Error('Unauthorized');
     }
 
-    profilesStore.splice(idx, 1);
+    const removed = profilesStore.splice(idx, 1)[0];
+
+    if (isDbConnected()) {
+      (ProfileModel as any).findOneAndDelete({ slug: removed.slug }).catch((err: any) => {
+        console.warn('[ProfilesService] DB profile delete sync notice:', err);
+      });
+    }
+
     return true;
   },
 
