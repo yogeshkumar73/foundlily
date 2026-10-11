@@ -44,12 +44,12 @@ export const Auth: React.FC<AuthProps> = ({ initialMode = 'login', onSuccess, on
   };
 
   const fillDemoUser = () => {
-    setEmail('user@foundlily.com');
+    setEmail('founder@startup.com');
     setPassword('');
   };
 
   const fillDemoAdmin = () => {
-    setEmail('admin@foundlily.com');
+    setEmail('admin@startup.com');
     setPassword('');
   };
 

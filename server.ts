@@ -52,7 +52,8 @@ async function startServer() {
     });
   }
 
-  let currentPort = Number(process.env.PORT) || 3000;
+  const defaultPort = 5000;
+  let currentPort = Number(process.env.PORT) || defaultPort;
 
   function tryListen(port: number) {
     server.removeAllListeners('error');

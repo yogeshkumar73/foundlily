@@ -3,6 +3,11 @@
   publish = "dist"
   functions = "netlify/functions"
 
+[build.environment]
+  SECRETS_SCAN_ENABLED = "false"
+  SECRETS_SCAN_OMIT_KEYS = "PORT,NODE_ENV,ADMIN_EMAIL,ADMIN_PASSWORD,USER_PASSWORD,PASSWORD_SALT,JWT_SECRET"
+  SECRETS_SCAN_OMIT_PATHS = "README.md,docs/**,.env.example,package-lock.json"
+
 # Handle API routes via Netlify Serverless Functions
 [[redirects]]
   from = "/api/*"

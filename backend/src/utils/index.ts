@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-const PASSWORD_SALT = process.env.PASSWORD_SALT || 'foundlily_secure_salt_2026';
+const PASSWORD_SALT = process.env.PASSWORD_SALT || 'app_crypto_salt_v1';
 
 export function hashPassword(password: string): string {
   return crypto.pbkdf2Sync(password, PASSWORD_SALT, 1000, 64, 'sha512').toString('hex');

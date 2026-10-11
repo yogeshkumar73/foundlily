@@ -1,6 +1,6 @@
 # Foundlily REST API Documentation
 
-Base URL: `http://localhost:3000/api`
+Base URL: `/api` (or `http://localhost:<PORT>/api`)
 
 ---
 

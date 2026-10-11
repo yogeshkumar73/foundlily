@@ -80,19 +80,21 @@ npm install
 ### 2. Environment Setup
 Configure your [.env](file:///.env) file:
 ```env
-PORT=3000
-NODE_ENV=development
-JWT_SECRET=foundlily_jwt_production_secret_key_2026
-PASSWORD_SALT=foundlily_secure_salt_2026
-MONGODB_URI=mongodb://127.0.0.1:27017/foundlily
-GEMINI_API_KEY=your_optional_gemini_key_here
+PORT=
+NODE_ENV=
+JWT_SECRET=your_jwt_secret_key
+PASSWORD_SALT=your_password_salt_key
+MONGODB_URI=your_mongodb_connection_string
+GEMINI_API_KEY=your_optional_gemini_key
+ADMIN_EMAIL=your_admin_email
+ADMIN_PASSWORD=your_admin_password
 ```
 
 ### 3. Run Development Server
 ```bash
 npm run dev
 ```
-Open **`http://localhost:3000`** in your browser.
+Open the local application URL in your browser.
 
 ### 4. Build for Production
 ```bash
@@ -102,12 +104,14 @@ npm start
 
 ---
 
-## 🔑 Demo Credentials
+## 🔑 Authentication & Administration
 
-| Role | Email | Password | Access |
-|---|---|---|---|
-| **Admin** | `admin@foundlily.com` | `admin123` | Full Admin Dashboard, Approvals, Feature Toggle |
-| **Founder / User** | `user@foundlily.com` | `user123` | Profile Management, Following, Bookmarking |
+Admin and user accounts are configured dynamically via environment variables:
+
+| Role | Environment Variable | Access |
+|---|---|---|
+| **Admin** | `ADMIN_EMAIL` & `ADMIN_PASSWORD` | Full Admin Dashboard, Approvals, Governance |
+| **Founder / User** | Dynamic registration or `USER_PASSWORD` | Profile Management, Following, Bookmarking |
 
 ---
 

@@ -55,7 +55,7 @@ export const authService = {
   },
 
   async login(email: string, pass: string) {
-    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@foundlily.com').toLowerCase();
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@example.com').toLowerCase();
     const adminPassword = process.env.ADMIN_PASSWORD;
 
     if (adminPassword && email.toLowerCase() === adminEmail && pass === adminPassword) {

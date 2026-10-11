@@ -3,9 +3,9 @@ import { hashPassword } from '../utils';
 
 dotenv.config();
 
-const adminEmail = process.env.ADMIN_EMAIL || 'admin@foundlily.com';
-const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-const userPassword = process.env.USER_PASSWORD || 'user123';
+const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+const adminPassword = process.env.ADMIN_PASSWORD || 'default_admin_pass_unconfigured';
+const userPassword = process.env.USER_PASSWORD || 'default_user_pass_unconfigured';
 
 export const initialUsers = [
   {
@@ -20,7 +20,7 @@ export const initialUsers = [
   {
     _id: 'u-user1',
     name: 'Sarah Chen',
-    email: 'user@foundlily.com',
+    email: process.env.USER_EMAIL || 'user@example.com',
     passwordHash: hashPassword(userPassword),
     avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150',
     role: 'user' as const,
